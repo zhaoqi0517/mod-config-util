@@ -17,6 +17,7 @@ public class PropertyHelper {
 		OutputStream os = null;
 		try {
 			is = new FileInputStream(new File(appConfigPath));
+			//is = PropertyHelper.class.getResourceAsStream(appConfigPath);
 			property.load(is);
 			property.setProperty("coala.application.name", appId);
 

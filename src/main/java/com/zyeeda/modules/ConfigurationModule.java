@@ -16,6 +16,7 @@ import org.vertx.java.core.json.JsonObject;
 import org.xml.sax.SAXException;
 
 import com.zyeeda.helpers.JDBCHelper;
+import com.zyeeda.helpers.MavenHelper;
 import com.zyeeda.helpers.PropertyHelper;
 import com.zyeeda.helpers.XMLHelper;
 
@@ -38,6 +39,7 @@ public class ConfigurationModule extends BusModBase implements
 		appConfigPath = getOptionalStringConfig("appConfigPath", "");
 		dbConfigPath = getOptionalStringConfig("dbConfigPath", "");
 		serverConfigPath = getOptionalStringConfig("serverConfigPath", "");
+		
 
 		System.out.println("address --->" + address);
 		System.out.println("app config path --->" + appConfigPath);
@@ -68,9 +70,23 @@ public class ConfigurationModule extends BusModBase implements
 		case "server":
 			doUpdateServerConfig(message);
 			break;
+		case "maven":
+			doInstallMavenLibs(message);
+			break;
 		default:
 			logger.error("Oops!!! Error type.");
 			break;
+		}
+	}
+
+	private void doInstallMavenLibs(Message<JsonObject> message) {
+		String configFile = message.body().getString("config");
+		try {
+			MavenHelper.installPackage(configFile);
+			sendOK(message);
+		} catch (IOException e) {
+			sendError(message, e.getMessage());
+			e.printStackTrace();
 		}
 	}
 
@@ -145,6 +161,8 @@ public class ConfigurationModule extends BusModBase implements
 
 		try {
 			File appDir = new File(appPath);
+			File currentPath = new File(this.getAppConfigPath());
+			System.out.println("current path --->" + currentPath.getAbsolutePath());
 			boolean isCreated = appDir.mkdir();
 			if (isCreated) {
 				boolean flag = PropertyHelper.updateProperty(appId, this.getAppConfigPath());
