@@ -19,6 +19,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentType;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -40,16 +41,27 @@ public class XMLHelper {
 
 		// out put encoding.
 		transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+		
+		transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 
+		DocumentType type = document.getDoctype();
+		if (type != null) {
+			System.out.println("doctype -->" + type.getPublicId());
+			transformer.setOutputProperty(OutputKeys.DOCTYPE_PUBLIC, type.getPublicId());
+			transformer.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, type.getSystemId());
+		}
+		
 		DOMSource source = new DOMSource(document);
 		StreamResult result = new StreamResult(new File(path));
 		transformer.transform(source, result);
 
+		transformer.reset();
 		return true;
 	}
 	
 	public static boolean updateDBConfig(String userName, String password, String name, String driver, String url, String dbConfigPath) throws XPathExpressionException, ParserConfigurationException, SAXException, IOException, TransformerException {
 		Document document = loadXML(dbConfigPath);
+		
 		XPath path = XPathFactory.newInstance().newXPath();
 		XPathExpression express = path.compile("//Configure/New[@class='org.eclipse.jetty.plus.jndi.Resource']/Arg/New[@class='bitronix.tm.resource.jdbc.PoolingDataSource']/Set[@name='className']");
 		
@@ -80,6 +92,55 @@ public class XMLHelper {
 		path.reset();
 
 		return updateXML(document, dbConfigPath);
+	}
+	
+	public static boolean updatePomDBConfig(String userName, String password, String name, String host, String port, String version, String pomPath) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException, TransformerException {
+		Document document = loadXML(pomPath);
+		XPath path = XPathFactory.newInstance().newXPath();
+		XPathExpression express = path.compile("//project/properties/mysql.server.version");
+		
+		NodeList nodes = (NodeList) express.evaluate(document,
+				XPathConstants.NODESET);
+		Node node = nodes.item(0);
+		node.setTextContent(version);
+		path.reset();
+		
+		express = path.compile("//project/properties/mysql.server.host");
+		nodes = (NodeList) express.evaluate(document,
+				XPathConstants.NODESET);
+		node = nodes.item(0);
+		node.setTextContent(host);
+		path.reset();
+		
+		express = path.compile("//project/properties/mysql.server.port");
+		nodes = (NodeList) express.evaluate(document,
+				XPathConstants.NODESET);
+		node = nodes.item(0);
+		node.setTextContent(port);
+		path.reset();
+
+		express = path.compile("//project/properties/mysql.server.database");
+		nodes = (NodeList) express.evaluate(document,
+				XPathConstants.NODESET);
+		node = nodes.item(0);
+		node.setTextContent(name);
+		path.reset();
+		
+		express = path.compile("//project/properties/mysql.server.user");
+		nodes = (NodeList) express.evaluate(document,
+				XPathConstants.NODESET);
+		node = nodes.item(0);
+		node.setTextContent(userName);
+		path.reset();
+		
+		express = path.compile("//project/properties/mysql.server.password");
+		nodes = (NodeList) express.evaluate(document,
+				XPathConstants.NODESET);
+		node = nodes.item(0);
+		node.setTextContent(password);
+		path.reset();
+		
+		return updateXML(document, pomPath);
 	}
 	
 	public static boolean updateServerConfig(String port, String serverConfigPath) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException, TransformerException {
